@@ -41,7 +41,7 @@
            :on-change #(dispatch [::events/select-transaction id])}])
 
 (defn transaction-row [{:keys [uuid date note category income expense] :as t}]
-  [:tr [:td (transaction-checkbox uuid)] [:td date] [:td note] [:td category] [:td income] [:td expense]])
+  (with-meta [:tr [:td (transaction-checkbox uuid)] [:td date] [:td note] [:td category] [:td income] [:td expense]] {:key uuid}))
 
 (defn transactions-table [transactions]
   [:table.table

@@ -21,10 +21,10 @@
 
 (def transformations (comp add-uuid ing->transaction))
 
-(defn transform-csv [event] (-> event 
-                                .-target 
-                                .-result 
-                                csvstr->map 
+(defn transform-csv [event] (-> event
+                                .-target
+                                .-result
+                                csvstr->map
                                 (->> (map transformations) (map dispatch-transaction) doall)))
 
 (defn file-input []
@@ -36,25 +36,37 @@
                        :accept "text/csv"
                        :on-change (partial read-file transform-csv)}]]])
 
-(defn transaction-checkbox [id] 
+(defn transaction-checkbox [id]
   [:input {:type "checkbox"
            :on-change #(dispatch [::events/select-transaction id])}])
 
+(defn transaction-row [{:keys [uuid date note category income expense] :as t}]
+  [:tr [:td (transaction-checkbox uuid)] [:td date] [:td note] [:td category] [:td income] [:td expense]])
+
 (defn transactions-table [transactions]
   [:table.table
-   [:thead [:tr [:th [:input {:type "checkbox"}]] [:th "Date"] [:th "Note"] [:th "Income"] [:th "expense"]]]
-   [:tbody
-    (for [[id {:keys [date note income expense]}] transactions]
-      [:tr {:key id} [:td (transaction-checkbox id)] [:td date] [:td note] [:td income] [:td expense]])]])
+   [:thead [:tr [:th [:input {:type "checkbox"}]] [:th "Date"] [:th "Note"] [:th "Category"] [:th "Income"] [:th "Expense"]]]
+   [:tbody (doall (for [t transactions] (transaction-row @(subscribe [::subs/transaction t]))))]])
 
 (defn transaction-list
   []
-  (let [transactions @(subscribe [::subs/all-transactions])]
-    (log (count transactions))
-    [:div.block (when (< 0 (count transactions)) (log "rendering transaction list") (transactions-table transactions))]
-    ))
+  (let [transactions @(subscribe [::subs/visible-transactions])]
+    [:div.block (when (< 0 (count transactions)) (log "rendering transaction list") (transactions-table transactions))]))
 
-(defn views [] [:div.container [file-input] [transaction-list]])
+(defn category-input
+  []
+  [:div.columns
+   [:div.column.is-four-fifths
+    [:label.mr-3 {:for "category-input"} "Category:"]
+    [:input {:type "text" :on-change #(dispatch [::events/category-value (-> % .-target .-value)])}]]
+   [:div.column.is-one-fifth
+    [:input {:type "button" :value "Assign Category" :on-click (fn [] (dispatch [::events/assign-category]))}]]])
+
+(defn views [] [:div.container
+                [:div.columns
+                 [:div.column.is-one-third [file-input]]
+                 [:div.column.is-two-thirds [category-input]]]
+                [transaction-list]])
 
 (defn
   ^:export

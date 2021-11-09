@@ -5,4 +5,5 @@
 
   init-db
   
-  {:transactions {}})
+  {:transactions {}
+   :selected-transactions []})

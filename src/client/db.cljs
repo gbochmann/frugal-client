@@ -2,7 +2,7 @@
   (:require [reagent.core :as reagent]))
 
 (def
-  
-  init-db 
 
-  (reagent/atom {:transactions {}}))
+  init-db
+  
+  {:transactions {}})

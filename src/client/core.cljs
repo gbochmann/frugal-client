@@ -29,26 +29,28 @@
                                 csvstr->map
                                 (->> (map transformations) (map dispatch-transaction) doall)))
 
-(defn file-input []
-  [:div.block
-   [:div.block [:label {:for "csv-input"} "Add CSV file"]]
-   [:div.block
-    [:input#csv-input {:type "file"
-                       :name "csv-input"
-                       :accept "text/csv"
-                       :on-change (partial read-file transform-csv)}]]])
+(defn file-input
+  []
+  [:input#csv-input.button 
+   {:type "file"
+    :name "csv-input"
+    :accept "text/csv"
+    :on-change (partial read-file transform-csv)}])
 
-(defn transaction-checkbox [id]
+(defn transaction-checkbox 
+  [id]
   (let [is-checked @(subscribe [::subs/is-selected id])]
     [:input {:type "checkbox"
              :checked is-checked
              :on-change #(dispatch [::events/select-transaction id])}]))
 
-(defn transaction-row [{:keys [uuid date note category income expense selected] :as t}]
+(defn transaction-row
+  [{:keys [uuid date note category income expense]}]
   (with-meta [:tr [:td (transaction-checkbox uuid)] [:td date] [:td note] [:td category] [:td income] [:td expense]] {:key uuid}))
 
-(defn transactions-table [transactions]
-  (let [all-selected @(subscribe [::subs/all-selected])] 
+(defn transactions-table
+  [transactions]
+  (let [all-selected @(subscribe [::subs/all-selected])]
     [:table.table
      [:thead [:tr [:th [:input {:type "checkbox" :on-change #(dispatch [::events/select-all-visible]) :checked all-selected}]] [:th "Date"] [:th "Note"] [:th "Category"] [:th "Income"] [:th "Expense"]]]
      [:tbody (doall (for [t transactions] (transaction-row @(subscribe [::subs/transaction t]))))]]))
@@ -60,18 +62,25 @@
 
 (defn category-input
   []
-  [:div.columns
-   [:div.column.is-four-fifths
-    [:label.mr-3 {:for "category-input"} "Category:"]
-    [:input {:type "text" :on-change #(dispatch [::events/category-value (-> % .-target .-value)])}]]
-   [:div.column.is-one-fifth
-    [:input {:type "button" :value "Assign Category" :on-click (fn [] (dispatch [::events/assign-category]))}]]])
+  [:div.field.has-addons
+   [:div.control.is-expanded 
+    [:input.input {:type "text" :on-change #(dispatch [::events/category-value (-> % .-target .-value)]) :placeholder "Enter category"}]]
+   [:div.control [:button.button.is-info {:on-click (fn [] (dispatch [::events/assign-category]))} "Assign"]]])
 
-(defn views [] [:div.container
-                [:div.columns
-                 [:div.column.is-one-third [file-input]]
-                 [:div.column.is-two-thirds [category-input]]]
-                [transaction-list]])
+(defn filter-input
+  []
+  [:div.field.has-addons
+   [:div.control.is-expanded 
+    [:input.input {:type "text" :on-change #(dispatch [::events/filter-table (-> % .-target .-value)]) :placeholder "Enter filter term"}]]
+   [:div.control [:button.button {:on-click (fn [] (dispatch [::events/clear-filter]))} "Clear"]]])
+
+(defn views []
+  [:div.container
+   [:div.columns
+    [:div.column.is-one-fourth [file-input]]
+    [:div.column.is-two-fourths [filter-input]]
+    [:div.column.is-one-fourths [category-input]]]
+   [transaction-list]])
 
 (defn
   ^:export

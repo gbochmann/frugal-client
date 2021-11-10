@@ -55,3 +55,16 @@
      (-> db (assoc :selected-transactions []) (assoc :all-selected false))
      (-> db (assoc :selected-transactions (:visible-transactions db)) (assoc :all-selected true)))))
 
+
+(rf/reg-event-db
+ 
+ ::filter-table
+ 
+ (fn [db [_ term]] (assoc db :filter-term term)))
+
+
+(rf/reg-event-db
+ 
+ ::clear-filter
+ 
+ (fn [db [_]] (-> db (assoc :filter-term nil) (assoc :visible-transactions (map :uuid (:transactions db))))))

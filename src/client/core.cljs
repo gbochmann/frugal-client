@@ -19,7 +19,9 @@
 
 (defn add-uuid [t] (assoc t :uuid (random-uuid)))
 
-(def transformations (comp add-uuid ing->transaction))
+(defn init-selected [t] (assoc t :selected false))
+
+(def transformations (comp add-uuid init-selected ing->transaction))
 
 (defn transform-csv [event] (-> event
                                 .-target
@@ -37,16 +39,19 @@
                        :on-change (partial read-file transform-csv)}]]])
 
 (defn transaction-checkbox [id]
-  [:input {:type "checkbox"
-           :on-change #(dispatch [::events/select-transaction id])}])
+  (let [is-checked @(subscribe [::subs/is-selected id])]
+    [:input {:type "checkbox"
+             :checked is-checked
+             :on-change #(dispatch [::events/select-transaction id])}]))
 
-(defn transaction-row [{:keys [uuid date note category income expense] :as t}]
+(defn transaction-row [{:keys [uuid date note category income expense selected] :as t}]
   (with-meta [:tr [:td (transaction-checkbox uuid)] [:td date] [:td note] [:td category] [:td income] [:td expense]] {:key uuid}))
 
 (defn transactions-table [transactions]
-  [:table.table
-   [:thead [:tr [:th [:input {:type "checkbox"}]] [:th "Date"] [:th "Note"] [:th "Category"] [:th "Income"] [:th "Expense"]]]
-   [:tbody (doall (for [t transactions] (transaction-row @(subscribe [::subs/transaction t]))))]])
+  (let [all-selected @(subscribe [::subs/all-selected])] 
+    [:table.table
+     [:thead [:tr [:th [:input {:type "checkbox" :on-change #(dispatch [::events/select-all-visible]) :checked all-selected}]] [:th "Date"] [:th "Note"] [:th "Category"] [:th "Income"] [:th "Expense"]]]
+     [:tbody (doall (for [t transactions] (transaction-row @(subscribe [::subs/transaction t]))))]]))
 
 (defn transaction-list
   []

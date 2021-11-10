@@ -18,7 +18,17 @@
 
  ::select-transaction
 
- (fn [db [_ id]] (assoc db :selected-transactions (conj (:selected-transactions db) id))))
+ (fn [db [_ id]]
+   (if
+    (nil? (some #{id} (:selected-transactions db)))
+
+     (let [new-db (assoc db :selected-transactions (conj (:selected-transactions db) id))]
+       (if
+        (= (count (:visible-transactions new-db)) (count (:selected-transactions new-db)))
+         (assoc new-db :all-selected true)
+         new-db))
+
+     (-> db (assoc :selected-transactions (remove #{id} (:selected-transactions db))) (assoc :all-selected false)))))
 
 
 (rf/reg-event-db
@@ -33,3 +43,15 @@
  ::category-value
 
  (fn [db [_ text]] (assoc db :category-value text)))
+
+
+(rf/reg-event-db
+
+ ::select-all-visible
+
+ (fn [db [_]] (log "select all visible")
+   (if
+    (:all-selected db)
+     (-> db (assoc :selected-transactions []) (assoc :all-selected false))
+     (-> db (assoc :selected-transactions (:visible-transactions db)) (assoc :all-selected true)))))
+

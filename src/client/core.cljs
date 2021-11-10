@@ -58,6 +58,7 @@
 (defn transaction-list
   []
   (let [transactions @(subscribe [::subs/visible-transactions])]
+    (log transactions)
     [:div.block (when (< 0 (count transactions)) (log "rendering transaction list") (transactions-table transactions))]))
 
 (defn category-input
@@ -71,7 +72,7 @@
   []
   [:div.field.has-addons
    [:div.control.is-expanded 
-    [:input.input {:type "text" :on-change #(dispatch [::events/filter-table (-> % .-target .-value)]) :placeholder "Enter filter term"}]]
+    [:input.input {:type "text" :on-change #(dispatch-sync [::events/filter-table (-> % .-target .-value)]) :placeholder "Enter filter term"}]]
    [:div.control [:button.button {:on-click (fn [] (dispatch [::events/clear-filter]))} "Clear"]]])
 
 (defn views []

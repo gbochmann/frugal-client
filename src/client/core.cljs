@@ -19,9 +19,9 @@
 
 (defn add-uuid [t] (assoc t :uuid (random-uuid)))
 
-(defn init-selected [t] (assoc t :selected false))
+(defn init-fields [t] (assoc t :selected false :category nil))
 
-(def transformations (comp add-uuid init-selected ing->transaction))
+(def transformations (comp add-uuid init-fields ing->transaction))
 
 (defn transform-csv [event] (-> event
                                 .-target
@@ -31,13 +31,13 @@
 
 (defn file-input
   []
-  [:input#csv-input.button 
+  [:input#csv-input.button
    {:type "file"
     :name "csv-input"
     :accept "text/csv"
     :on-change (partial read-file transform-csv)}])
 
-(defn transaction-checkbox 
+(defn transaction-checkbox
   [id]
   (let [is-checked @(subscribe [::subs/is-selected id])]
     [:input {:type "checkbox"
@@ -58,29 +58,34 @@
 (defn transaction-list
   []
   (let [transactions @(subscribe [::subs/visible-transactions])]
-    (log transactions)
     [:div.block (when (< 0 (count transactions)) (log "rendering transaction list") (transactions-table transactions))]))
 
 (defn category-input
   []
   [:div.field.has-addons
-   [:div.control.is-expanded 
+   [:div.control.is-expanded
     [:input.input {:type "text" :on-change #(dispatch [::events/category-value (-> % .-target .-value)]) :placeholder "Enter category"}]]
    [:div.control [:button.button.is-info {:on-click (fn [] (dispatch [::events/assign-category]))} "Assign"]]])
 
 (defn filter-input
   []
   [:div.field.has-addons
-   [:div.control.is-expanded 
+   [:div.control.is-expanded
     [:input.input {:type "text" :on-change #(dispatch-sync [::events/filter-table (-> % .-target .-value)]) :placeholder "Enter filter term"}]]
    [:div.control [:button.button {:on-click (fn [] (dispatch [::events/clear-filter]))} "Clear"]]])
+
+(defn export-button
+  []
+  [:div.field
+   [:button.button.is-primary {:on-click (fn [] (dispatch [::events/export-csv]))} "Export"]])
 
 (defn views []
   [:div.container
    [:div.columns
     [:div.column.is-one-fourth [file-input]]
-    [:div.column.is-two-fourths [filter-input]]
-    [:div.column.is-one-fourths [category-input]]]
+    [:div.column.is-one-fourth [export-button]]
+    [:div.column.is-one-fourth [filter-input]]
+    [:div.column.is-one-fourth [category-input]]]
    [transaction-list]])
 
 (defn

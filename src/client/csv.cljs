@@ -1,13 +1,5 @@
 (ns client.csv (:require [clojure.string :as cljstr]
-                         [client.logging :refer [log]]
-                         [clojure.spec.alpha :as spec]))
-
-;; #?(:clj (defn open-csv
-;;           ([] "")
-;;           ([file-path] (-> file-path slurp))))
-
-;; #?(:clj (def parse-int #(Integer/parseInt %))
-;;    :cljs (def parse-int js/parseInt))
+                         [client.logging :refer [log]]))
 
 (defmulti heading identity)
 
@@ -43,9 +35,9 @@
 
 (defn ing->transaction
   ([] [])
-  ([{:strs [Buchung Verwendungszweck initiator-recipient Betrag] :as data}]
+  ([{:strs [Buchung Verwendungszweck initiator-recipient Betrag Buchungstext] :as data}]
    (when (not (map? data)) (log "Not a map in ing->transaction."))
    {:date Buchung
-    :note (str initiator-recipient " " Verwendungszweck)
+    :note (str Buchungstext " " initiator-recipient " " Verwendungszweck)
     :expense (-> Betrag naive-str->int expense)
     :income (-> Betrag naive-str->int income)}))

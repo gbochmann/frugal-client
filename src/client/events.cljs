@@ -2,7 +2,8 @@
   (:require [re-frame.core :as rf]
             [client.db :refer [init-db]]
             [client.logging :refer [log]]
-            [clojure.string :refer [includes? blank?]]))
+            [clojure.string :refer [includes? blank? lower-case trim join]]
+            [client.fx :as fx]))
 
 (rf/reg-event-db ::initialize (fn [ _ _ ] init-db))
 
@@ -51,17 +52,18 @@
  ::select-all-visible
 
  (fn [db [_]] (log "select all visible")
-   (log (:visible-transactions db))
    (if
     (:all-selected db)
      (-> db (assoc :selected-transactions []) (assoc :all-selected false))
      (-> db (assoc :selected-transactions (:visible-transactions db)) (assoc :all-selected true)))))
 
-(defn filter-visible-transactions [term visible-ts transactions]
+
+(defn filter-by-note [term transactions]
   (if
    (blank? term)
-    visible-ts
-    (->> transactions (filter #(includes? (get-in % [1 :note]) term)) (map first))))
+    (keys transactions)
+    (->> transactions (filter #(includes? (lower-case (get-in % [1 :note])) (lower-case (trim term)))) (map first))))
+
 
 (rf/reg-event-db
  
@@ -70,8 +72,9 @@
  (fn 
    [db [_ term]]
    
-   (let [new-visible-ts (filter-visible-transactions term (:visible-transactions db) (:transactions db))
+   (let [new-visible-ts (filter-by-note term (:transactions db))
          all-ts-selected (= (count (:selected-transactions db)) (count new-visible-ts))]
+     
      (-> db
          (assoc :filter-term term)
          (assoc :visible-transactions new-visible-ts)
@@ -83,3 +86,20 @@
  ::clear-filter
  
  (fn [db [_]] (-> db (assoc :filter-term nil) (assoc :visible-transactions (map :uuid (:transactions db))))))
+
+
+(defn map->csv
+  [transactions headers]
+  (->> transactions
+       (map second)
+        (map #(dissoc % :uuid :selected))
+       (map #(into [] %))
+       (reduce (fn [csv items] (str csv (join ";" (map second items)) "\n")) (str (join ";" headers) "\n"))
+       log))
+
+
+(rf/reg-event-fx
+
+ ::export-csv
+
+ (fn [{:keys [db]} _] {::fx/export-csv (map->csv (:transactions db) ["Date" "Note" "Expense" "Income" "Category"])}))

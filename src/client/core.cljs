@@ -89,13 +89,11 @@
    [transaction-list]])
 
 (defn
-  ^:export
-
-  ;; This triggers a page reload once the code has been reloaded. See https://code.thheller.com/blog/shadow-cljs/2019/08/25/hot-reload-in-clojurescript.html
-  ^:dev/after-load
-
+  
   main []
 
   (dispatch-sync [::events/initialize])
 
   (rdom/render [views] (js/document.getElementById "app")))
+
+(main)

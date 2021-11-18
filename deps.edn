@@ -14,6 +14,8 @@
  
  
 
- :aliases {:fig {:main-opts ["-m" "figwheel.main"]}}
+ :aliases {:fig {:main-opts ["-m" "figwheel.main"]}
+           :test {:extra-deps {olical/cljs-test-runner {:mvn/version "3.8.0"}}
+                  :main-opts ["-m" "cljs-test-runner.main"]}}
  
  :paths ["src" "test" "resources" "target"]}

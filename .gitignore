@@ -17,3 +17,4 @@ node_modules
 /.lsp
 /.calva
 /target
+/cljs-test-runner-out

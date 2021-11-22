@@ -77,11 +77,6 @@
                      :on-change #(dispatch-sync [::events/filter-table (-> % .-target .-value)]) :placeholder "Enter filter term"}]]
      [:div.control [:button.button {:on-click (fn [] (dispatch [::events/clear-filter]))} "Clear"]]]))
 
-(defn export-button
-  []
-  [:div.field
-   [:button.button.is-primary {:on-click (fn [] (dispatch [::events/export-csv]))} "Export"]])
-
 (defn export-dropdown
   []
   [:div.dropdown.is-hoverable

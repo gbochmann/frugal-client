@@ -69,10 +69,13 @@
 
 (defn filter-input
   []
-  [:div.field.has-addons
-   [:div.control.is-expanded
-    [:input.input {:type "text" :on-change #(dispatch-sync [::events/filter-table (-> % .-target .-value)]) :placeholder "Enter filter term"}]]
-   [:div.control [:button.button {:on-click (fn [] (dispatch [::events/clear-filter]))} "Clear"]]])
+  (let [filter-term @(subscribe [::subs/filter-term])]
+    [:div.field.has-addons
+     [:div.control.is-expanded
+      [:input.input {:type "text"
+                     :value filter-term
+                     :on-change #(dispatch-sync [::events/filter-table (-> % .-target .-value)]) :placeholder "Enter filter term"}]]
+     [:div.control [:button.button {:on-click (fn [] (dispatch [::events/clear-filter]))} "Clear"]]]))
 
 (defn export-button
   []

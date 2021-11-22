@@ -20,3 +20,5 @@
                                               log) 
                                         count) 
                                   (:transactions db))))
+
+(rf/reg-sub ::filter-term (fn [db [_]] (:filter-term db)))

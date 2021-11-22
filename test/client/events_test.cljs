@@ -1,6 +1,6 @@
 (ns client.events-test
   (:require [cljs.test :refer-macros [deftest is]]
-            [client.events :refer [transactions->category-sum category-sum->csv]]))
+            [client.events :as events]))
 
 (defn log [s]
   (js/console.log (clj->js s))
@@ -10,7 +10,7 @@
 
 (deftest test-transactions->category-freq
   (is (=
-       (transactions->category-sum
+       (events/transactions->category-sum
         {:uuid1 {:date "07.04.2020"
                  :note "VISA EDEKA AKTIV-MARKT NR XXXX 7033 JENA KAUFUMSATZ 03.04 195518 ARN74627641095000141960901 Apple Pay"
                  :expense 896
@@ -46,5 +46,10 @@
 
 (deftest test-category-sum->csv
   (is (=
-       (category-sum->csv category-sums)
+       (events/category-sum->csv category-sums)
        "Year;Month;Einkaufen;Restaurants\n2020;April;896;0\n2021;April;1198;0\n2021;December;500;3324\n")))
+
+(deftest test-clear-filter
+  (is (=
+       (events/clear-filter {:transactions {:uuid1 {} :uuid2 {}}} [::events/clear-filter])
+       {:filter-term nil :transactions {:uuid1 {} :uuid2 {}} :visible-transactions [:uuid1 :uuid2]})))

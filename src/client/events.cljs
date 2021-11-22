@@ -81,11 +81,8 @@
          (assoc :all-selected all-ts-selected)))))
 
 
-(rf/reg-event-db
- 
- ::clear-filter
- 
- (fn [db [_]] (-> db (assoc :filter-term nil) (assoc :visible-transactions (map :uuid (:transactions db))))))
+(defn clear-filter [db [_]] (-> db (assoc :filter-term nil) (assoc :visible-transactions (keys (:transactions db)))))
+(rf/reg-event-db ::clear-filter clear-filter)
 
 
 (defn map->csv

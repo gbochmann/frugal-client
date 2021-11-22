@@ -10,3 +10,13 @@
 (rf/reg-sub ::is-selected (fn [db [_ id]] (not (nil? (some #{id} (:selected-transactions db))))))
 
 (rf/reg-sub ::all-selected (fn [db [_]] (:all-selected db)))
+
+(rf/reg-sub ::category-counter (fn [db [_]] 
+                                 ((juxt #(->> %
+                                              vals
+                                              (map :category)
+                                              (filter some?)
+                                              count
+                                              log) 
+                                        count) 
+                                  (:transactions db))))

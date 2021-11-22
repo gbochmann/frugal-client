@@ -2,7 +2,7 @@
   (:require [re-frame.core :as rf]
             [client.db :refer [init-db]]
             [client.logging :refer [log]]
-            [clojure.string :refer [includes? blank? lower-case trim join]]
+            [clojure.string :refer [includes? blank? lower-case trim join split]]
             [client.fx :as fx]))
 
 (rf/reg-event-db ::initialize (fn [ _ _ ] init-db))
@@ -94,8 +94,7 @@
        (map second)
         (map #(dissoc % :uuid :selected))
        (map #(into [] %))
-       (reduce (fn [csv items] (str csv (join ";" (map second items)) "\n")) (str (join ";" headers) "\n"))
-       log))
+       (reduce (fn [csv items] (str csv (join ";" (map second items)) "\n")) (str (join ";" headers) "\n"))))
 
 
 (rf/reg-event-fx
@@ -103,3 +102,53 @@
  ::export-csv
 
  (fn [{:keys [db]} _] {::fx/export-csv (map->csv (:transactions db) ["Date" "Note" "Expense" "Income" "Category"])}))
+
+(def month-map
+  {"01" "January"
+   "02" "February"
+   "03" "March"
+   "04" "April"
+   "05" "May"
+   "06" "June"
+   "07" "July"
+   "08" "August"
+   "09" "September"
+   "10" "October"
+   "11" "November"
+   "12" "December"})
+
+(defn get-month [date] (->> (split date #"\.") rest vec))
+
+(defn sum-by-category
+  [acc transaction]
+  (update-in acc [(get-month (:date transaction)) (:category transaction)] (fn [expenses] (+ expenses (:expense transaction)))))
+
+(defn transactions->category-sum
+  [transactions]
+  (->> transactions vals (filter #(not (nil? (:category %)))) (reduce sum-by-category {})))
+
+(defn sum-by-cat->csv
+  [categories]
+  (fn [acc [month sum]]
+    (conj acc (str (->> month ((juxt second #(month-map (first %)))) (join ";"))
+                   ";"
+                   (join ";"
+                         (map (fn [c] (let [exp (get sum c)] (if exp exp 0))) categories))
+                   "\n"))))
+
+(defn category-sum->csv
+  [sums]
+  (let [categories (->> sums vals (map keys) flatten  (into #{}))]
+    (apply str
+           (->> sums
+                (reduce (sum-by-cat->csv categories) [])
+                (into ["Year;Month;" (join ";" categories) "\n"])))))
+
+(rf/reg-event-fx
+ 
+ ::export-category-csv
+ 
+ (fn [{:keys [db]} _] {::fx/export-category-csv (-> (:transactions db)
+                                                    transactions->category-sum
+                                                    ;; log
+                                                    category-sum->csv)}))

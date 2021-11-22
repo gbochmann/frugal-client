@@ -79,13 +79,34 @@
   [:div.field
    [:button.button.is-primary {:on-click (fn [] (dispatch [::events/export-csv]))} "Export"]])
 
+(defn export-dropdown
+  []
+  [:div.dropdown.is-hoverable
+   [:div.dropdown-trigger
+    [:button.button {:aria-haspopup true :aria-controls "dropdown-menu"}
+     [:span "Export"]
+     [:span.icon.is-small
+      [:ion-icon {:name "chevron-down-outline"}]]]]
+   [:div#dropdown-menu.dropdown-menu {:role "menu"}
+    [:div.dropdown-content
+     [:div.dropdown-item
+      [:button {:on-click #(dispatch [::events/export-csv])} "Transactions"]]
+     [:div.dropdown-item
+      [:button {:on-click #(dispatch [::events/export-category-csv])} "Totals by category"]]]]])
+
+(defn category-counter
+  []
+  (let [[categorized total] @(subscribe [::subs/category-counter])] 
+    [:div.container [:progress.progress.is-primary {:value categorized :max total} (str categorized "/" total)]]))
+
 (defn views []
   [:div.container
    [:div.columns
-    [:div.column.is-one-fourth [file-input]]
-    [:div.column.is-one-fourth [export-button]]
-    [:div.column.is-one-fourth [filter-input]]
-    [:div.column.is-one-fourth [category-input]]]
+    [:div.column.is-one-ffith [file-input]]
+    [:div.column.is-one-fifth [export-dropdown]]
+    [:div.column.is-one-fifth [filter-input]]
+    [:div.column.is-one-fifth [category-input]]
+    [:div.column.is-one-fifth [category-counter]]]
    [transaction-list]])
 
 (defn

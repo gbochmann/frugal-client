@@ -3,15 +3,16 @@
             [client.db :refer [init-db]]
             [client.logging :refer [log]]
             [clojure.string :refer [includes? blank? lower-case trim join split]]
-            [client.fx :as fx]))
+            [client.fx :as fx]
+            [client.csv :refer [csvstr->map fidor->transaction]]))
 
-(rf/reg-event-db ::initialize (fn [ _ _ ] init-db))
+(rf/reg-event-db ::initialize (fn [_ _] init-db))
 
-(rf/reg-event-db 
- 
- ::add-transaction 
- 
- (fn [db [_ t]] (-> db 
+(rf/reg-event-db
+
+ ::add-transaction
+
+ (fn [db [_ t]] (-> db
                     (assoc-in [:transactions (:uuid t)] t)
                     (assoc :visible-transactions (conj (:visible-transactions db) (:uuid t))))))
 
@@ -66,15 +67,15 @@
 
 
 (rf/reg-event-db
- 
+
  ::filter-table
- 
- (fn 
+
+ (fn
    [db [_ term]]
-   
+
    (let [new-visible-ts (filter-by-note term (:transactions db))
          all-ts-selected (= (count (:selected-transactions db)) (count new-visible-ts))]
-     
+
      (-> db
          (assoc :filter-term term)
          (assoc :visible-transactions new-visible-ts)
@@ -89,7 +90,7 @@
   [transactions headers]
   (->> transactions
        (map second)
-        (map #(dissoc % :uuid :selected))
+       (map #(dissoc % :uuid :selected))
        (map #(into [] %))
        (reduce (fn [csv items] (str csv (join ";" (map second items)) "\n")) (str (join ";" headers) "\n"))))
 
@@ -142,10 +143,26 @@
                 (into ["Year;Month;" (join ";" categories) "\n"])))))
 
 (rf/reg-event-fx
- 
+
  ::export-category-csv
- 
+
  (fn [{:keys [db]} _] {::fx/export-category-csv (-> (:transactions db)
                                                     transactions->category-sum
                                                     ;; log
                                                     category-sum->csv)}))
+
+(defn init-fields [t] (assoc t :selected false :category nil))
+(defn add-uuid [t] (assoc t :uuid (random-uuid)))
+(def base-transformations [add-uuid init-fields])
+
+;; (doall (map #(update db :transactions (fn [old-ts] (assoc old-ts (:uuid %) %))) transactions))
+
+(defn add-transaction
+  [db t]
+  (update db :transactions (fn [old-ts] (assoc old-ts (:uuid t) t) )))
+
+(defn add-fidor-transactions
+  [[db [_ event]]] (let [transactions (->> event .-target .-result csvstr->map (map (apply comp (conj base-transformations fidor->transaction))))]
+                     (reduce add-transaction db transactions)))
+
+(rf/reg-event-db ::add-fidor-transaction add-fidor-transactions)

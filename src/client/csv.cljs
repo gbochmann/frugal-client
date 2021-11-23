@@ -41,3 +41,11 @@
     :note (str Buchungstext " " initiator-recipient " " Verwendungszweck)
     :expense (-> Betrag naive-str->int expense)
     :income (-> Betrag naive-str->int income)}))
+
+(defn fidor->transaction 
+  ([] {})
+  ([{:strs [Datum Beschreibung Beschreibung2 Wert]}]
+   {:date Datum
+    :note (cljstr/trim (str Beschreibung " " Beschreibung2))
+    :expense (-> Wert naive-str->int expense)
+    :income (-> Wert naive-str->int income)}))

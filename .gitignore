@@ -19,3 +19,5 @@ node_modules
 /target
 /cljs-test-runner-out
 .rebel_readline_history
+resources/fidor-long.csv
+resources/long.csv

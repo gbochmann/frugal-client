@@ -53,3 +53,19 @@
   (is (=
        (events/clear-filter {:transactions {:uuid1 {} :uuid2 {}}} [::events/clear-filter])
        {:filter-term nil :transactions {:uuid1 {} :uuid2 {}} :visible-transactions [:uuid1 :uuid2]})))
+
+(def event  (clj->js {:target {:result "Datum;Beschreibung;Beschreibung2;Wert\n02.11.2021;Irgendwas ausgegeben;;-5.99\n13.01.2022;Noch was ausgegeben;Für Synths;-689.99\n"}}))
+
+(def counter (atom 1))
+
+(defn uuid-mock [] (str "UUID-" (swap! counter inc)))
+
+;; (defn reset-counter [] (swap! counter (constantly 1)))
+
+(deftest test-add-fidor-transactions
+  (is (=
+       (with-redefs [random-uuid uuid-mock] (events/add-fidor-transactions [{:transactions {"UUID-0" {} "UUID-1" {}}} [::events/add-fidor-transactions event]]))
+       {:transactions {"UUID-0" {}
+                       "UUID-1" {}
+                       "UUID-2" {:date "02.11.2021" :note "Irgendwas ausgegeben" :expense 599 :income 0 :selected false :category nil :uuid "UUID-2"}
+                       "UUID-3" {:date "13.01.2022" :note "Noch was ausgegeben Für Synths" :expense 68999 :income 0 :selected false :category nil :uuid "UUID-3"}}})))

@@ -4,7 +4,7 @@
             [client.logging :refer [log]]
             [clojure.string :refer [includes? blank? lower-case trim join split]]
             [client.fx :as fx]
-            [client.csv :refer [csvstr->map fidor->transaction]]))
+            [client.csv :refer [csvstr->map fidor->transaction ing->transaction]]))
 
 (rf/reg-event-db ::initialize (fn [_ _] init-db))
 
@@ -155,14 +155,16 @@
 (defn add-uuid [t] (assoc t :uuid (random-uuid)))
 (def base-transformations [add-uuid init-fields])
 
-;; (doall (map #(update db :transactions (fn [old-ts] (assoc old-ts (:uuid %) %))) transactions))
-
 (defn add-transaction
   [db t]
   (update db :transactions (fn [old-ts] (assoc old-ts (:uuid t) t) )))
 
-(defn add-fidor-transactions
-  [[db [_ event]]] (let [transactions (->> event .-target .-result csvstr->map (map (apply comp (conj base-transformations fidor->transaction))))]
-                     (reduce add-transaction db transactions)))
+(defn make-transaction-event [transformation]
+  (fn [[db [_ event]]] (let [transactions (->> event .-target .-result csvstr->map (map (apply comp (conj base-transformations transformation))))]
+                         (reduce add-transaction db transactions))))
 
-(rf/reg-event-db ::add-fidor-transaction add-fidor-transactions)
+(def add-fidor-transactions (make-transaction-event fidor->transaction))
+(rf/reg-event-db ::add-fidor-transactions add-fidor-transactions)
+
+(def add-ing-transactions (make-transaction-event ing->transaction))
+(rf/reg-event-db ::add-ing-transactions add-ing-transactions)

@@ -10,15 +10,6 @@
 
 (rf/reg-event-db
 
- ::add-transaction
-
- (fn [db [_ t]] (-> db
-                    (assoc-in [:transactions (:uuid t)] t)
-                    (assoc :visible-transactions (conj (:visible-transactions db) (:uuid t))))))
-
-
-(rf/reg-event-db
-
  ::select-transaction
 
  (fn [db [_ id]]
@@ -155,13 +146,16 @@
 (defn add-uuid [t] (assoc t :uuid (random-uuid)))
 (def base-transformations [add-uuid init-fields])
 
-(defn add-transaction
-  [db t]
-  (update db :transactions (fn [old-ts] (assoc old-ts (:uuid t) t) )))
+(defn add-transaction 
+  [db t] 
+  (-> db
+      (assoc-in [:transactions (:uuid t)] t)
+      (assoc :visible-transactions (conj (:visible-transactions db) (:uuid t)))))
 
 (defn make-transaction-event [transformation]
-  (fn [[db [_ event]]] (let [transactions (->> event .-target .-result csvstr->map (map (apply comp (conj base-transformations transformation))))]
-                         (reduce add-transaction db transactions))))
+  (fn [db [_ event]]
+    (let [transactions (->> event .-target .-result csvstr->map (map (apply comp (conj base-transformations transformation))))]
+      (reduce add-transaction db transactions))))
 
 (def add-fidor-transactions (make-transaction-event fidor->transaction))
 (rf/reg-event-db ::add-fidor-transactions add-fidor-transactions)

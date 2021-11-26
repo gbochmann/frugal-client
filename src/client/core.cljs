@@ -15,27 +15,13 @@
 
     (.readAsText r file)))
 
-(defn dispatch-transaction [t] (dispatch [::events/add-transaction t]) t)
-
-(defn add-uuid [t] (assoc t :uuid (random-uuid)))
-
-(defn init-fields [t] (assoc t :selected false :category nil))
-
-(def transformations (comp add-uuid init-fields ing->transaction))
-
-(defn transform-csv [event] (-> event
-                                .-target
-                                .-result
-                                csvstr->map
-                                (->> (map transformations) (map dispatch-transaction) doall)))
-
 (defn file-input
   []
   [:input#csv-input.button
    {:type "file"
     :name "csv-input"
     :accept "text/csv"
-    :on-change (partial read-file transform-csv)}])
+    :on-change (partial read-file #(dispatch [::events/add-ing-transactions %]))}])
 
 (defn transaction-checkbox
   [id]

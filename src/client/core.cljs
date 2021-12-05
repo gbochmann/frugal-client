@@ -17,7 +17,7 @@
 
 (defn file-input
   []
-  [:input#csv-input.button
+  [:input#csv-input
    {:type "file"
     :name "csv-input"
     :accept "text/csv"
@@ -37,61 +37,57 @@
 (defn transactions-table
   [transactions]
   (let [all-selected @(subscribe [::subs/all-selected])]
-    [:table.table
+    [:table
      [:thead [:tr [:th [:input {:type "checkbox" :on-change #(dispatch [::events/select-all-visible]) :checked all-selected}]] [:th "Date"] [:th "Note"] [:th "Category"] [:th "Income"] [:th "Expense"]]]
      [:tbody (doall (for [t transactions] (transaction-row @(subscribe [::subs/transaction t]))))]]))
 
 (defn transaction-list
   []
   (let [transactions @(subscribe [::subs/visible-transactions])]
-    [:div.block (when (< 0 (count transactions)) (log "rendering transaction list") (transactions-table transactions))]))
+    [:div (when (< 0 (count transactions)) (log "rendering transaction list") (transactions-table transactions))]))
 
 (defn category-input
   []
-  [:div.field.has-addons
-   [:div.control.is-expanded
-    [:input.input {:type "text" :on-change #(dispatch [::events/category-value (-> % .-target .-value)]) :placeholder "Enter category"}]]
-   [:div.control [:button.button.is-info {:on-click (fn [] (dispatch [::events/assign-category]))} "Assign"]]])
+  [:div
+   [:div
+    [:input {:type "text" :on-change #(dispatch [::events/category-value (-> % .-target .-value)]) :placeholder "Enter category"}]]
+   [:div [:button {:on-click (fn [] (dispatch [::events/assign-category]))} "Assign"]]])
 
 (defn filter-input
   []
   (let [filter-term @(subscribe [::subs/filter-term])]
-    [:div.field.has-addons
-     [:div.control.is-expanded
-      [:input.input {:type "text"
+    [:div
+     [:div
+      [:input {:type "text"
                      :value filter-term
                      :on-change #(dispatch-sync [::events/filter-table (-> % .-target .-value)]) :placeholder "Enter filter term"}]]
-     [:div.control [:button.button {:on-click (fn [] (dispatch [::events/clear-filter]))} "Clear"]]]))
+     [:div [:button {:on-click (fn [] (dispatch [::events/clear-filter]))} "Clear"]]]))
 
 (defn export-dropdown
   []
-  [:div.dropdown.is-hoverable
-   [:div.dropdown-trigger
-    [:button.button {:aria-haspopup true :aria-controls "dropdown-menu"}
+  [:div
+   [:div
+    [:button {:aria-haspopup true :aria-controls "dropdown-menu"}
      [:span "Export"]
-     [:span.icon.is-small
+     [:span
       [:ion-icon {:name "chevron-down-outline"}]]]]
-   [:div#dropdown-menu.dropdown-menu {:role "menu"}
-    [:div.dropdown-content
-     [:div.dropdown-item
+   [:div#dropdown-menu {:role "menu"}
+    [:div
+     [:div
       [:button {:on-click #(dispatch [::events/export-csv])} "Transactions"]]
-     [:div.dropdown-item
+     [:div
       [:button {:on-click #(dispatch [::events/export-category-csv])} "Totals by category"]]]]])
 
 (defn category-counter
   []
   (let [[categorized total] @(subscribe [::subs/category-counter])] 
-    [:div.container [:progress.progress.is-primary {:value categorized :max total} (str categorized "/" total)]]))
+    [:div [:progress {:value categorized :max total} (str categorized "/" total)]]))
 
 (defn views []
-  [:div.container
-   [:div.columns
-    [:div.column.is-one-ffith [file-input]]
-    [:div.column.is-one-fifth [export-dropdown]]
-    [:div.column.is-one-fifth [filter-input]]
-    [:div.column.is-one-fifth [category-input]]
-    [:div.column.is-one-fifth [category-counter]]]
-   [transaction-list]])
+  [:div.with-sidebar
+   [:nav.box.sidenav
+    [:ul.nav-menu [:li [:a.menu-link "Uncategorized"]] [:li [:a.menu-link "Transactions"]]]]
+   [:main.box.main "Main"]])
 
 (defn
   

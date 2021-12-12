@@ -41,10 +41,10 @@
      [:thead [:tr [:th [:input {:type "checkbox" :on-change #(dispatch [::events/select-all-visible]) :checked all-selected}]] [:th "Date"] [:th "Note"] [:th "Category"] [:th "Income"] [:th "Expense"]]]
      [:tbody (doall (for [t transactions] (transaction-row @(subscribe [::subs/transaction t]))))]]))
 
-(defn transaction-list
-  []
-  (let [transactions @(subscribe [::subs/visible-transactions])]
-    [:div (when (< 0 (count transactions)) (log "rendering transaction list") (transactions-table transactions))]))
+;; (defn transaction-list
+;;   []
+;;   (let [transactions @(subscribe [::subs/visible-transactions])]
+;;     [:div (when (< 0 (count transactions)) (log "rendering transaction list") (transactions-table transactions))]))
 
 (defn category-input
   []
@@ -83,11 +83,33 @@
   (let [[categorized total] @(subscribe [::subs/category-counter])] 
     [:div [:progress {:value categorized :max total} (str categorized "/" total)]]))
 
+(defn transaction-card
+  [uuid]
+  (let [{:keys [date note category income expense]} @(subscribe [::subs/transaction uuid])]
+    [:li.card-container 
+     [:div.card.box 
+      [:div.flex-grow-1 [:p (transaction-checkbox uuid)]] 
+      [:div.flex-grow-1 [:p date]] 
+      [:div.transaction-note [:p note] [:div.flex-grow-1 category]] 
+      [:div.flex-grow-1 [:p income] [:p expense]]]])
+  )
+
+(defn transaction-list
+  []
+  [:section.transaction-list 
+   [:div.transaction-list-main 
+    [:ul (let [visibles @(subscribe [::subs/visible-transactions])]
+           (for [v visibles] (transaction-card v)))]] 
+   [:div.transaction-list-sidebar 
+    [file-input]] ])
+
 (defn views []
   [:div.with-sidebar
    [:nav.box.sidenav
-    [:ul.nav-menu [:li [:a.menu-link "Uncategorized"]] [:li [:a.menu-link "Transactions"]]]]
-   [:main.box.main "Main"]])
+    [:ul.nav-menu 
+     [:li [:a.menu-link {:href "javascript:void"} [:p.menu-label [:span.icon.fas.fa-clipboard-list] "Uncategorized"] [:span.badge-container [:span.badge "55"]]]] 
+     [:li [:a.menu-link {:href "javascript:void"} [:p.menu-label [:span.icon.fas.fa-clipboard-check] "Categorized"] [:span.badge-container [:span.badge "0"]]]]]]
+   [:main.main [transaction-list]]])
 
 (defn
   

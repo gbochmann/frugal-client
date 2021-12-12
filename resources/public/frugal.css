@@ -119,7 +119,38 @@ body {
 	list-style-type: none;
 	margin: 0;
 	padding-left: 0;
-    line-height: 60px;
+}
+
+.menu-link {
+    vertical-align: middle;
+}
+
+.menu-link .icon {
+    margin-left: 1rem;
+    margin-right: 0.75rem;
+}
+
+.menu-link .badge {
+    background-color: #50597b;
+    border-radius: 35px;
+    display: inline-block;
+    width: 2.5rem;
+    height: 1.6rem;
+    text-align: center;
+    padding: 4px;
+}
+
+.menu-link .badge-container {
+    padding-right: 1rem;
+}
+
+.menu-link:hover .badge {
+    background-color: #e64c65;
+}
+
+.menu-link:hover {
+    text-decoration: none;
+    background-color: #50597b;
 }
 
 .nav-menu {
@@ -132,10 +163,60 @@ body {
 }
 
 .menu-link {
-    line-height: 60px;
-    display: block;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
     border-bottom: 1px solid #1f253d;
     -webkit-transition: background .2s;
     transition: background .2s;
 }
 
+.transaction-list {
+    display: flex;
+    flex-wrap: wrap;
+}
+
+.transaction-list-main {
+    flex-basis: 0;
+    flex-grow: 999;
+}
+
+.transaction-list ul {
+    height: 90vh;
+    overflow-y: scroll;
+}
+
+.transaction-list-sidebar {
+    flex-basis: 20rem;
+    flex-grow: 1;
+}
+
+.card {
+    box-shadow: 0 4px 8px 0 rgba(0,0,0,0.2);
+    transition: 0.3s;
+    min-height: 10vh;
+    margin: 0 0 2rem;
+    padding: 1rem;
+    display: flex;
+    gap: 2rem;
+}
+
+
+
+.card:hover {
+    box-shadow: 0 8px 16px 0 rgba(0,0,0,0.2);
+}
+
+.flex-grow-1 {
+    flex-grow: 1;
+}
+
+.flex-grow-2 {
+    flex-grow: 2;
+}
+
+.transaction-note {
+    flex-grow: 99;
+    overflow-wrap: break-word;
+    overflow: hidden;
+}

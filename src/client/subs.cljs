@@ -25,4 +25,6 @@
 
 (defn nil->num [x] (if (nil? x) 1 0))
 
-(rf/reg-sub ::uncategorized (fn [db [_]] (->> (:transactions db) vals (map (comp nil->num :category)) (reduce +))))
+(rf/reg-sub ::n-uncategorized (fn [db [_]] (->> (:transactions db) vals (map (comp nil->num :category)) (reduce +))))
+
+(rf/reg-sub ::n-categorized (fn [db [_]] (->> (:transactions db) vals (map :category) (filter some?) count)))

@@ -1,8 +1,6 @@
 (ns client.core
   (:require [reagent.dom :as rdom]
             [re-frame.core :refer [dispatch-sync dispatch subscribe]]
-            [client.csv :refer [csvstr->map ing->transaction]]
-            [client.logging :refer [log]]
             [client.events :as events]
             [client.subs :as subs]))
 
@@ -34,33 +32,20 @@
   [{:keys [uuid date note category income expense]}]
   (with-meta [:tr [:td (transaction-checkbox uuid)] [:td date] [:td note] [:td category] [:td income] [:td expense]] {:key uuid}))
 
-(defn transactions-table
-  [transactions]
-  (let [all-selected @(subscribe [::subs/all-selected])]
-    [:table
-     [:thead [:tr [:th [:input {:type "checkbox" :on-change #(dispatch [::events/select-all-visible]) :checked all-selected}]] [:th "Date"] [:th "Note"] [:th "Category"] [:th "Income"] [:th "Expense"]]]
-     [:tbody (doall (for [t transactions] (transaction-row @(subscribe [::subs/transaction t]))))]]))
-
-;; (defn transaction-list
-;;   []
-;;   (let [transactions @(subscribe [::subs/visible-transactions])]
-;;     [:div (when (< 0 (count transactions)) (log "rendering transaction list") (transactions-table transactions))]))
-
 (defn category-input
   []
-  [:div
-   [:div
-    [:input {:type "text" :on-change #(dispatch [::events/category-value (-> % .-target .-value)]) :placeholder "Enter category"}]]
-   [:div [:button {:on-click (fn [] (dispatch [::events/assign-category]))} "Assign"]]])
+  [:div.flex-container
+   [:input.input.has-suffix.flex-grow-max {:type "text" :on-change #(dispatch [::events/category-value (-> % .-target .-value)]) :placeholder "Enter category"}]
+   [:button.button.suffix.submit {:on-click (fn [] (dispatch [::events/assign-category]))} "Assign"]])
 
 (defn filter-input
   []
   (let [filter-term @(subscribe [::subs/filter-term])]
-    [:div.filter-container 
-     [:input.input.filter-category {:type "text"
+    [:div.flex-container
+     [:input.input.has-suffix.flex-grow-max {:type "text"
               :value filter-term
               :on-change #(dispatch-sync [::events/filter-table (-> % .-target .-value)]) :placeholder "Filter transactions by note"}]
-     [:button.button.clear {:on-click (fn [] (dispatch [::events/clear-filter]))} [:span.icon.fas.fa-times-circle]]]))
+     [:button.button.suffix.within-input {:on-click (fn [] (dispatch [::events/clear-filter]))} [:span.icon.fas.fa-times-circle]]]))
 
 (defn export-dropdown
   []
@@ -77,30 +62,27 @@
      [:div
       [:button {:on-click #(dispatch [::events/export-category-csv])} "Totals by category"]]]]])
 
-(defn category-counter
-  []
-  (let [[categorized total] @(subscribe [::subs/category-counter])] 
-    [:div [:progress {:value categorized :max total} (str categorized "/" total)]]))
-
 (defn transaction-card
   [uuid]
   (let [{:keys [date note category income expense]} @(subscribe [::subs/transaction uuid])]
-    [:li.card-container 
-     [:div.card.box 
-      [:div.flex-grow-1 [:p (transaction-checkbox uuid)]] 
-      [:div.flex-grow-1 [:p date]] 
-      [:div.transaction-note [:p note] [:div.flex-grow-1 category]] 
-      [:div.flex-grow-1 [:p income] [:p expense]]]])
+    (with-meta 
+      [:li.card-container
+       [:div.card.box
+        [:div.flex-grow-1 [:p (transaction-checkbox uuid)]]
+        [:div.flex-grow-1 [:p date]]
+        [:div.transaction-note [:p note] [:div.flex-grow-1 category]]
+        [:div.flex-grow-1 [:p income] [:p expense]]]]
+      {:key uuid}))
   )
 
-(defn transaction-list
+(defn uncategorized
   []
   [:div.transaction-area
    [:section.transaction-list
     [:div.transaction-list-main
-     [:div.box.sharp-bottom.transaction-filter [filter-input]]
+     [:div.box.sharp-bottom.top-bar [filter-input] [category-input]]
      [:ul (let [visibles @(subscribe [::subs/visible-transactions])]
-            (for [v visibles] (transaction-card v)))]]
+            (doall (for [v visibles] (transaction-card v))))]]
     [:div.transaction-list-sidebar
      [file-input]]]
    ])
@@ -109,9 +91,10 @@
   [:div.with-sidebar
    [:nav.box.sidenav
     [:ul.nav-menu 
-     [:li [:a.menu-link {:href "javascript:void"} [:p.menu-label [:span.icon.fas.fa-clipboard-list] "Uncategorized"] [:span.badge-container [:span.badge @(subscribe [::subs/uncategorized])]]]] 
-     [:li [:a.menu-link {:href "javascript:void"} [:p.menu-label [:span.icon.fas.fa-clipboard-check] "Categorized"] [:span.badge-container [:span.badge "0"]]]]]]
-   [:main.main [transaction-list]]])
+     [:li [:a.menu-link {:href "javascript:void"} [:p.menu-label [:span.icon.fas.fa-clipboard-list] "Uncategorized"] [:span.badge-container [:span.badge @(subscribe [::subs/n-uncategorized])]]]] 
+     [:li [:a.menu-link {:href "javascript:void"} [:p.menu-label [:span.icon.fas.fa-clipboard-check] "Categorized"] [:span.badge-container [:span.badge @(subscribe [::subs/n-categorized])]]]]]]
+   [:main.main [uncategorized]]])
+
 
 (defn
   

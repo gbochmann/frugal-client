@@ -17,7 +17,7 @@
 
 (defn file-input
   []
-  [:input#csv-input
+  [:input#csv-input.button
    {:type "file"
     :name "csv-input"
     :accept "text/csv"
@@ -56,12 +56,11 @@
 (defn filter-input
   []
   (let [filter-term @(subscribe [::subs/filter-term])]
-    [:div
-     [:div
-      [:input {:type "text"
-                     :value filter-term
-                     :on-change #(dispatch-sync [::events/filter-table (-> % .-target .-value)]) :placeholder "Enter filter term"}]]
-     [:div [:button {:on-click (fn [] (dispatch [::events/clear-filter]))} "Clear"]]]))
+    [:div.filter-container 
+     [:input.input.filter-category {:type "text"
+              :value filter-term
+              :on-change #(dispatch-sync [::events/filter-table (-> % .-target .-value)]) :placeholder "Filter transactions by note"}]
+     [:button.button.clear {:on-click (fn [] (dispatch [::events/clear-filter]))} [:span.icon.fas.fa-times-circle]]]))
 
 (defn export-dropdown
   []
@@ -96,18 +95,21 @@
 
 (defn transaction-list
   []
-  [:section.transaction-list 
-   [:div.transaction-list-main 
-    [:ul (let [visibles @(subscribe [::subs/visible-transactions])]
-           (for [v visibles] (transaction-card v)))]] 
-   [:div.transaction-list-sidebar 
-    [file-input]] ])
+  [:div.transaction-area
+   [:section.transaction-list
+    [:div.transaction-list-main
+     [:div.box.sharp-bottom.transaction-filter [filter-input]]
+     [:ul (let [visibles @(subscribe [::subs/visible-transactions])]
+            (for [v visibles] (transaction-card v)))]]
+    [:div.transaction-list-sidebar
+     [file-input]]]
+   ])
 
 (defn views []
   [:div.with-sidebar
    [:nav.box.sidenav
     [:ul.nav-menu 
-     [:li [:a.menu-link {:href "javascript:void"} [:p.menu-label [:span.icon.fas.fa-clipboard-list] "Uncategorized"] [:span.badge-container [:span.badge "55"]]]] 
+     [:li [:a.menu-link {:href "javascript:void"} [:p.menu-label [:span.icon.fas.fa-clipboard-list] "Uncategorized"] [:span.badge-container [:span.badge @(subscribe [::subs/uncategorized])]]]] 
      [:li [:a.menu-link {:href "javascript:void"} [:p.menu-label [:span.icon.fas.fa-clipboard-check] "Categorized"] [:span.badge-container [:span.badge "0"]]]]]]
    [:main.main [transaction-list]]])
 

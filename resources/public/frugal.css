@@ -60,20 +60,26 @@ a {
 		text-decoration: underline;
 	}
 
-h1, h2, p, a, span{
-	color: #fff;
-}
-	.scnd-font-color {
-		color: #9099b7;
-	}
-
-
 
 
 body {
-	background: #1f253d;
-    color: #fff;
+    --dark-bg-color: #1f253d;
+    --light-bg-color: #394264;
+    --dark-font-color: var(--light-bg-color);
+    --white: #f3e9ff;
+    --gray: #9099b7;
+
+	background: var(--dark-bg-color);
+    color: var(--white);
     font-family: 'Ubuntu', sans-serif;
+}
+
+h1, h2, p, a, span{
+	color: var(--white);
+}
+
+.scnd-font-color {
+    color: var(--gray);
 }
 
 .with-sidebar {
@@ -94,8 +100,14 @@ body {
 }
 
 .box {
-    background: #394264;
+    background: var(--light-bg-color);
     border-radius: 5px;
+}
+
+.box.sharp-bottom {
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
+    border-bottom: thick solid #11a8ab
 }
 
 .sidenav {  
@@ -201,8 +213,6 @@ body {
     gap: 2rem;
 }
 
-
-
 .card:hover {
     box-shadow: 0 8px 16px 0 rgba(0,0,0,0.2);
 }
@@ -219,4 +229,63 @@ body {
     flex-grow: 99;
     overflow-wrap: break-word;
     overflow: hidden;
+}
+
+.transaction-filter {
+    padding: 1rem;
+}
+
+.input {
+    line-height: 1.6rem;
+    font-family: 'Ubuntu', sans-serif;
+    font-size: 15px;
+    background-color: var(--white);
+    border: none;
+}
+
+input:focus-visible {
+    outline: none;
+    border: none;
+    outline-offset: 0;
+}
+
+.input.filter-category {
+    border-bottom-right-radius: 0;
+    border-top-right-radius: 0;
+    border-top-left-radius: 5px;
+    border-bottom-left-radius: 5px;
+    border: none;
+    flex-grow: 999;
+}
+
+.input.filter-category:active,
+.input.filter-category:focus-visible {
+    border: none;
+    outline-offset: 0;
+}
+
+.filter-container {
+    display: flex;
+    justify-content: center;
+}
+
+.button {
+    line-height: 1.6rem;
+    font-family: 'Ubuntu', sans-serif;
+    font-size: 15px;
+    border: none;
+}
+
+.input + .button.clear {
+    background-color: var(--white);
+    border-bottom-left-radius: 0;
+    border-top-left-radius: 0;
+    border-bottom-right-radius: 5px;
+    border-top-right-radius: 5px;
+    border: none;
+    flex-grow: 1;
+}
+
+.icon.fas.fa-times-circle {
+    color: var(--light-bg-color);
 }

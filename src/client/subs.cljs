@@ -22,3 +22,7 @@
                                   (:transactions db))))
 
 (rf/reg-sub ::filter-term (fn [db [_]] (:filter-term db)))
+
+(defn nil->num [x] (if (nil? x) 1 0))
+
+(rf/reg-sub ::uncategorized (fn [db [_]] (->> (:transactions db) vals (map (comp nil->num :category)) (reduce +))))

@@ -21,16 +21,10 @@
     :accept "text/csv"
     :on-change (partial read-file #(dispatch [::events/add-ing-transactions %]))}])
 
-(defn transaction-checkbox
-  [id]
-  (let [is-checked @(subscribe [::subs/is-selected id])]
-    [:input {:type "checkbox"
-             :checked is-checked
-             :on-change #(dispatch [::events/select-transaction id])}]))
 
 (defn transaction-row
   [{:keys [uuid date note category income expense]}]
-  (with-meta [:tr [:td (transaction-checkbox uuid)] [:td date] [:td note] [:td category] [:td income] [:td expense]] {:key uuid}))
+  (with-meta [:tr [:td date] [:td note] [:td category] [:td income] [:td expense]] {:key uuid}))
 
 (defn category-input
   []
@@ -63,16 +57,14 @@
       [:button {:on-click #(dispatch [::events/export-category-csv])} "Totals by category"]]]]])
 
 (defn transaction-card
-  [uuid]
-  (let [{:keys [date note category income expense]} @(subscribe [::subs/transaction uuid])]
-    (with-meta 
+  [{:keys [date note category income expense uuid]}]
+  (with-meta 
       [:li.card-container
        [:div.card.box
-        [:div.flex-grow-1 [:p (transaction-checkbox uuid)]]
         [:div.flex-grow-1 [:p date]]
         [:div.transaction-note [:p note] [:div.flex-grow-1 category]]
         [:div.flex-grow-1 [:p income] [:p expense]]]]
-      {:key uuid}))
+      {:key uuid})
   )
 
 (defn uncategorized
@@ -81,7 +73,7 @@
    [:section.transaction-list
     [:div.transaction-list-main
      [:div.box.sharp-bottom.top-bar [filter-input] [category-input]]
-     [:ul (let [visibles @(subscribe [::subs/visible-transactions])]
+     [:ul (let [visibles @(subscribe [::subs/uncategorized])]
             (doall (for [v visibles] (transaction-card v))))]]
     [:div.transaction-list-sidebar
      [file-input]]]

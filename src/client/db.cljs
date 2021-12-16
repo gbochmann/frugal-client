@@ -6,5 +6,4 @@
   init-db
   
   {:transactions {}
-   :selected-transactions []
-   :all-selected false})
+   :selected-transactions []})

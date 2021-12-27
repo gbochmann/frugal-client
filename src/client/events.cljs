@@ -115,7 +115,6 @@
 
  (fn [{:keys [db]} _] {::fx/export-category-csv (-> (:transactions db)
                                                     transactions->category-sum
-                                                    ;; log
                                                     category-sum->csv)}))
 
 (defn init-fields [t] (assoc t :selected false :category nil))
@@ -138,3 +137,5 @@
 
 (def add-ing-transactions (make-transaction-event ing->transaction))
 (rf/reg-event-db ::add-ing-transactions add-ing-transactions)
+
+(rf/reg-event-db ::toggle-single-assignment (fn [db _] (assoc db :single-assignment (not (:single-assignment db)))))

@@ -30,3 +30,5 @@
 (rf/reg-sub ::n-uncategorized (fn [db [_]] (->> (:transactions db) vals (map (comp nil->num :category)) (reduce +))))
 
 (rf/reg-sub ::n-categorized (fn [db [_]] (->> (:transactions db) vals (map :category) (filter some?) count)))
+
+(rf/reg-sub ::single-assignment (fn [db [_]] (:single-assignment db)))

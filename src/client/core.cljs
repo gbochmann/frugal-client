@@ -2,7 +2,8 @@
   (:require [reagent.dom :as rdom]
             [re-frame.core :refer [dispatch-sync dispatch subscribe]]
             [client.events :as events]
-            [client.subs :as subs]))
+            [client.subs :as subs]
+            [clojure.string :as string]))
 
 
 (defn read-file [onload-callback event]
@@ -20,11 +21,6 @@
     :name "csv-input"
     :accept "text/csv"
     :on-change (partial read-file #(dispatch [::events/add-ing-transactions %]))}])
-
-
-(defn transaction-row
-  [{:keys [uuid date note category income expense]}]
-  (with-meta [:tr [:td date] [:td note] [:td category] [:td income] [:td expense]] {:key uuid}))
 
 (defn category-input
   []
@@ -61,11 +57,20 @@
   (with-meta 
       [:li.card-container
        [:div.card.box
-        [:div.flex-grow-1 [:p date]]
+        [:div.flex-grow-1 [:p (string/join "." date)]]
         [:div.transaction-note [:p note] [:div.flex-grow-1 category]]
         [:div.flex-grow-1 [:p income] [:p expense]]]]
       {:key uuid})
   )
+
+(defn transaction-list-sidebar
+  []
+  [:div
+   [:div
+    (let [mode @(subscribe [::subs/single-assignment])] 
+      [:input#single {:type "checkbox" :value mode :on-change (fn [] (dispatch [::events/toggle-single-assignment]))}])
+    [:label {:for "single"} "Single"]]
+   [file-input]])
 
 (defn uncategorized
   []
@@ -76,7 +81,7 @@
      [:ul (let [visibles @(subscribe [::subs/uncategorized])]
             (doall (for [v visibles] (transaction-card v))))]]
     [:div.transaction-list-sidebar
-     [file-input]]]
+     [transaction-list-sidebar]]]
    ])
 
 (defn views []

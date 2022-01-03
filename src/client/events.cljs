@@ -4,7 +4,8 @@
             [client.logging :refer [log]]
             [clojure.string :refer [includes? blank? lower-case trim join split]]
             [client.fx :as fx]
-            [client.csv :refer [csvstr->map fidor->transaction ing->transaction]]))
+            [client.csv :refer [csvstr->map fidor->transaction ing->transaction]]
+            [cljs-time.core :refer [local-date before?]]))
 
 (rf/reg-event-db ::initialize (fn [_ _] init-db))
 
@@ -12,12 +13,12 @@
 
  ::assign-category
 
- (fn [db [_]] (reduce 
-               (fn [d id] 
-                 (update-in d 
-                            [:transactions id :category] 
-                            (fn [_] (:category-value db)))) 
-               db 
+ (fn [db [_]] (reduce
+               (fn [d id]
+                 (update-in d
+                            [:transactions id :category]
+                            (fn [_] (:category-value db))))
+               db
                (:visible-transactions db))))
 
 
@@ -28,28 +29,50 @@
  (fn [db [_ text]] (assoc db :category-value text)))
 
 
+(defn transaction->local-date
+  [t]
+  (->> t :date reverse (apply local-date)))
+
+(defn compare-transaction-dates
+  [t1 t2]
+  (before? (transaction->local-date t1)
+           (transaction->local-date t2)))
+
+
 (defn filter-by-note [term transactions]
   (if
    (blank? term)
-    (keys transactions)
-    (->> transactions (filter #(includes? (lower-case (get-in % [1 :note])) (lower-case (trim term)))) (map first))))
+    transactions
+    (->> transactions (filter #(includes?
+                                (lower-case (get % :note))
+                                (lower-case (trim term)))))))
 
 
-(rf/reg-event-db
+(defn filter-table
+  " Takes all transactions from the db
+  filters it by term and updates the list of visible-transactions
+  in the db."
 
- ::filter-table
+  [db [_ term]]
 
- (fn
-   [db [_ term]]
+  (let [new-visible-ts (->> db
+                            :transactions
+                            vals
+                            (filter-by-note term)
+                            (sort compare-transaction-dates)
+                            (map :uuid))]
 
-   (let [new-visible-ts (filter-by-note term (:transactions db))]
-
-     (-> db
-         (assoc :filter-term term)
-         (assoc :visible-transactions new-visible-ts)))))
+    (-> db
+        (assoc :filter-term term)
+        (assoc :visible-transactions new-visible-ts))))
 
 
-(defn clear-filter [db [_]] (-> db (assoc :filter-term nil) (assoc :visible-transactions (keys (:transactions db)))))
+(rf/reg-event-db ::filter-table filter-table)
+
+
+(defn clear-filter [db [_]] (-> db
+                                (assoc :filter-term nil)
+                                (assoc :visible-transactions (map :uuid (sort compare-transaction-dates (vals (:transactions db)))))))
 (rf/reg-event-db ::clear-filter clear-filter)
 
 
@@ -85,8 +108,8 @@
 (defn get-month [date] (->> (split date #"\.") rest vec))
 
 (defn sum-by-category
-  [acc transaction]
-  (update-in acc [(get-month (:date transaction)) (:category transaction)] (fn [expenses] (+ expenses (:expense transaction)))))
+  [transactions t]
+  (update-in transactions [(get-month (:date t)) (:category t)] (fn [expenses] (+ expenses (:expense t)))))
 
 (defn transactions->category-sum
   [transactions]
@@ -121,16 +144,17 @@
 (defn add-uuid [t] (assoc t :uuid (random-uuid)))
 (def base-transformations [add-uuid init-fields])
 
-(defn add-transaction 
-  [db t] 
+(defn add-transaction
+  [db t]
   (-> db
       (assoc-in [:transactions (:uuid t)] t)
       (assoc :visible-transactions (conj (:visible-transactions db) (:uuid t)))))
 
 (defn make-transaction-event [transformation]
   (fn [db [_ event]]
-    (let [transactions (->> event .-target .-result csvstr->map (map (apply comp (conj base-transformations transformation))))]
-      (reduce add-transaction db transactions))))
+    (let [transactions (->> event .-target .-result csvstr->map
+                            (map (apply comp (conj base-transformations transformation))))]
+      (reduce add-transaction db (sort compare-transaction-dates transactions)))))
 
 (def add-fidor-transactions (make-transaction-event fidor->transaction))
 (rf/reg-event-db ::add-fidor-transactions add-fidor-transactions)

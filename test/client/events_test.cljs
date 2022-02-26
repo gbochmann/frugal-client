@@ -61,18 +61,18 @@
   (is (=
        (with-redefs [random-uuid (make-uuid-mock)]
          (events/add-fidor-transactions
-          {:transactions {"UUID-0" {} "UUID-1" {}}}
+          {:transactions {"UUID-0" {:uuid "UUID-0"} "UUID-1" {:uuid "UUID-1"}}}
           [::events/add-fidor-transactions
            (event-result "Datum;Beschreibung;Beschreibung2;Wert\n02.11.2021;Irgendwas ausgegeben;;-5.99\n13.01.2022;Noch was ausgegeben;Für Synths;-689.99\n")]))
 
-       {:transactions {"UUID-0" {}
-                       "UUID-1" {}
+       {:transactions {"UUID-0" {:uuid "UUID-0"}
+                       "UUID-1" {:uuid "UUID-1"}
                        "UUID-2" {:date [2 11 2021] :note "Irgendwas ausgegeben" :expense 599 :income 0 :selected false :category nil :uuid "UUID-2"}
                        "UUID-3" {:date [13 1 2022] :note "Noch was ausgegeben Für Synths" :expense 68999 :income 0 :selected false :category nil :uuid "UUID-3"}}
-        :visible-transactions ["UUID-3" "UUID-2"]})))
+        :visible-transactions (list "UUID-2" "UUID-3")})))
 
-(def db-transactions {"UUID-0" {}
-                      "UUID-1" {}
+(def db-transactions {"UUID-0" {:uuid "UUID-0"}
+                      "UUID-1" {:uuid "UUID-1"}
                       "UUID-2" {:date [7 4 2021] :note "SOFORT GEKAUFT SCHOKOLADENHUNGER NAHRUNGSAUFNAHME" :expense 698 :income 0 :selected false :category nil :uuid "UUID-2"}
                       "UUID-3" {:date [13 1 2022] :note "Lastschrift Salesforce Germany GmbH Gehalt April 2020" :expense 0 :income 10000000 :selected false :category nil :uuid "UUID-3"}})
 
@@ -80,12 +80,12 @@
   (is (=
        (with-redefs [random-uuid (make-uuid-mock)]
          (events/add-ing-transactions
-          {:transactions {"UUID-0" {} "UUID-1" {}}}
+          {:transactions {"UUID-0" {:uuid "UUID-0"} "UUID-1" {:uuid "UUID-1"}}}
           [::events/add-ing-transactions
            (event-result "Buchung;Valuta;Auftraggeber/Empfänger;Buchungstext;Kategorie;Verwendungszweck;Saldo;Währung;Betrag;Währung\n07.04.2021;07.04.2021;SCHOKOLADENHUNGER;SOFORT GEKAUFT;SUESSKRAM;NAHRUNGSAUFNAHME;687,44;EUR;-6,98;EUR\n13.01.2022;13.01.2022;Salesforce Germany GmbH;Lastschrift;Gehalt;Gehalt April 2020;6100;EUR;100000,00;EUR\n")]))
 
        {:transactions db-transactions
-        :visible-transactions ["UUID-3" "UUID-2"]})))
+        :visible-transactions (list "UUID-2" "UUID-3")})))
 
 (def t3 {:date [13 1 2022] :note "Lastschrift Salesforce Germany GmbH Gehalt April 2020" :expense 0 :income 10000000 :selected false :category nil :uuid "UUID-3"})
 
@@ -100,19 +100,19 @@
                     "UUID-YUP" {:date [2 1 2022] :note "Cognitect" :uuid "UUID-YUP"}
                     "UUID-YUP2" {:date [1 1 2022] :note "Cognitect b" :uuid "UUID-YUP2"}}
       initial-db {:transactions transactions
-                  :visible-transactions (list "UUID-NOPE" "UUID-YUP2" "UUID-YUP")
+                  :visible-transactions (list "UUID-YUP" "UUID-NOPE" "UUID-YUP2")
                   :filter-term nil}]
   
   (deftest test-filter-table
     (is (= (events/filter-table initial-db [:events/filter-table "Cognitect"])
            {:transactions transactions
-            :visible-transactions (list "UUID-YUP2" "UUID-YUP")
+            :visible-transactions (list "UUID-YUP" "UUID-YUP2")
             :filter-term "Cognitect"})))
 
   (deftest test-filter-table-blank
     (is (= (events/filter-table initial-db [:events/filter-table nil])
            {:transactions transactions
-            :visible-transactions (list "UUID-NOPE" "UUID-YUP2" "UUID-YUP")
+            :visible-transactions (list "UUID-YUP" "UUID-NOPE" "UUID-YUP2")
             :filter-term nil})))
   
   (deftest test-clear-filter

@@ -5,7 +5,7 @@
             [clojure.string :refer [includes? blank? lower-case trim join split]]
             [client.fx :as fx]
             [client.csv :refer [csvstr->map fidor->transaction ing->transaction]]
-            [cljs-time.core :refer [local-date before?]]))
+            [cljs-time.core :refer [local-date after?]]))
 
 (rf/reg-event-db ::initialize (fn [_ _] init-db))
 
@@ -35,7 +35,7 @@
 
 (defn compare-transaction-dates
   [t1 t2]
-  (before? (transaction->local-date t1)
+  (after? (transaction->local-date t1)
            (transaction->local-date t2)))
 
 
@@ -66,13 +66,13 @@
         (assoc :filter-term term)
         (assoc :visible-transactions new-visible-ts))))
 
-
 (rf/reg-event-db ::filter-table filter-table)
 
 
 (defn clear-filter [db [_]] (-> db
                                 (assoc :filter-term nil)
                                 (assoc :visible-transactions (map :uuid (sort compare-transaction-dates (vals (:transactions db)))))))
+
 (rf/reg-event-db ::clear-filter clear-filter)
 
 

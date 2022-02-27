@@ -25,7 +25,7 @@
 
 (defn nil->num [x] (if (nil? x) 1 0))
 
-(rf/reg-sub ::uncategorized (fn [db [_]] (->> (:visible-transactions db) (map (fn [id] (get (:transactions db) id))) (filter (comp nil? :category)))))
+(rf/reg-sub ::uncategorized (fn [db [_]] (->> (:uncategorized-transactions db) (map (fn [id] (get (:transactions db) id))) (filter (comp nil? :category)))))
 
 (rf/reg-sub ::n-uncategorized (fn [db [_]] (->> (:transactions db) vals (map (comp nil->num :category)) (reduce +))))
 

@@ -19,7 +19,7 @@
                             [:transactions id :category]
                             (fn [_] (:category-value db))))
                db
-               (:visible-transactions db))))
+               (:uncategorized-transactions db))))
 
 
 (rf/reg-event-db
@@ -64,14 +64,14 @@
 
     (-> db
         (assoc :filter-term term)
-        (assoc :visible-transactions new-visible-ts))))
+        (assoc :uncategorized-transactions new-visible-ts))))
 
 (rf/reg-event-db ::filter-table filter-table)
 
 
 (defn clear-filter [db [_]] (-> db
                                 (assoc :filter-term nil)
-                                (assoc :visible-transactions (map :uuid (sort compare-transaction-dates (vals (:transactions db)))))))
+                                (assoc :uncategorized-transactions (map :uuid (sort compare-transaction-dates (vals (:transactions db)))))))
 
 (rf/reg-event-db ::clear-filter clear-filter)
 
@@ -148,7 +148,7 @@
   [db t]
   (-> db
       (assoc-in [:transactions (:uuid t)] t)
-      (assoc :visible-transactions (conj (:visible-transactions db) (:uuid t)))))
+      (assoc :uncategorized-transactions (conj (:uncategorized-transactions db) (:uuid t)))))
 
 (defn make-transaction-event [transformation]
   (fn [db [_ event]]

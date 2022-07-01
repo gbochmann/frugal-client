@@ -9,17 +9,19 @@
 
 (rf/reg-event-db ::initialize (fn [_ _] init-db))
 
-(rf/reg-event-db
+(defn add-single-category
+  [db id]
+  (-> db
+      (update-in [:transactions id :category] (fn [_] (:category-value db)))
+      (update :uncategorized-transactions (fn [uncategorized] (remove #{id} uncategorized)))
+      (update-in [:categorized-transactions] (fn [categorized] (conj categorized id)))))
 
- ::assign-category
+(defn add-bulk-category
+  [db [_]] (reduce add-single-category db (:uncategorized-transactions db)))
 
- (fn [db [_]] (reduce
-               (fn [d id]
-                 (update-in d
-                            [:transactions id :category]
-                            (fn [_] (:category-value db))))
-               db
-               (:uncategorized-transactions db))))
+(rf/reg-event-db ::assign-bulk-category add-bulk-category)
+
+(rf/reg-event-db ::assign-single-category (fn [db [_]] (add-single-category db (first (:uncategorized-transactions db)))))
 
 
 (rf/reg-event-db
@@ -36,7 +38,7 @@
 (defn compare-transaction-dates
   [t1 t2]
   (after? (transaction->local-date t1)
-           (transaction->local-date t2)))
+          (transaction->local-date t2)))
 
 
 (defn filter-by-note [term transactions]
@@ -60,18 +62,21 @@
                             vals
                             (filter-by-note term)
                             (sort compare-transaction-dates)
-                            (map :uuid))]
+                            (map :uuid))
+        is-single-assignment (= 0 (count term))]
 
     (-> db
         (assoc :filter-term term)
-        (assoc :uncategorized-transactions new-visible-ts))))
+        (assoc :uncategorized-transactions new-visible-ts)
+        (assoc :single-assignment is-single-assignment))))
 
 (rf/reg-event-db ::filter-table filter-table)
 
 
 (defn clear-filter [db [_]] (-> db
                                 (assoc :filter-term nil)
-                                (assoc :uncategorized-transactions (map :uuid (sort compare-transaction-dates (vals (:transactions db)))))))
+                                (assoc :uncategorized-transactions (map :uuid (sort compare-transaction-dates (filter (comp nil? :category) (vals (:transactions db))))))
+                                (assoc :single-assignment true)))
 
 (rf/reg-event-db ::clear-filter clear-filter)
 
@@ -163,3 +168,5 @@
 (rf/reg-event-db ::add-ing-transactions add-ing-transactions)
 
 (rf/reg-event-db ::toggle-single-assignment (fn [db _] (assoc db :single-assignment (not (:single-assignment db)))))
+
+(rf/reg-event-db ::switch-view (fn [db [_ view]] (assoc db :main-view view)))

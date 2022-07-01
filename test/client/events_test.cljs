@@ -10,39 +10,39 @@
 
 (def short-string "Buchung;Valuta;Auftraggeber/Empfänger;Buchungstext;Kategorie;Verwendungszweck;Saldo;Währung;Betrag;Währung\n07.04.2021;07.04.2021;VISA EDEKA AKTIV-MARKT;Lastschrift;Lebensmittel und Haushalt;NR XXXX 7033 JENA KAUFUMSATZ 03.04 195518 ARN74627641095000141960901 Apple Pay;687,44;EUR;-6,98;EUR\n07.04.2021;07.04.2021;Salesforce Germany GmbH;Lastschrift;Gehalt;Gehalt April 2020;6100;EUR;5325,00;EUR\n")
 
+(def base-transactions {:uuid1 {:date "07.04.2020"
+                                 :note "VISA EDEKA AKTIV-MARKT NR XXXX 7033 JENA KAUFUMSATZ 03.04 195518 ARN74627641095000141960901 Apple Pay"
+                                 :expense 896
+                                 :income 0
+                                 :category "Einkaufen"}
+                         :uuid2 {:date "07.04.2021"
+                                 :note "VISA EDEKA AKTIV-MARKT NR XXXX 7033 JENA KAUFUMSATZ 03.04 195518 ARN74627641095000141960901 Apple Pay"
+                                 :expense 698
+                                 :income 0
+                                 :category "Einkaufen"}
+                         :uuid3 {:date "08.04.2021"
+                                 :note "VISA EDEKA AKTIV-MARKT NR XXXX 7033 JENA KAUFUMSATZ 03.04 195518 ARN74627641095000141960901 Apple Pay"
+                                 :expense 500
+                                 :income 0
+                                 :category "Einkaufen"}
+                         :uuid4 {:date "08.04.2021"
+                                 :note "Salesforce"
+                                 :expense 0
+                                 :income 230000
+                                 :category nil}
+                         :uuid5 {:date "07.12.2021"
+                                 :note "Cafe Lenz"
+                                 :expense 3324
+                                 :income 0
+                                 :category "Restaurants"}
+                         :uuidd6 {:date "08.12.2021"
+                                  :note "VISA EDEKA AKTIV-MARKT NR XXXX 7033 JENA KAUFUMSATZ 03.04 195518 ARN74627641095000141960901 Apple Pay"
+                                  :expense 500
+                                  :income 0
+                                  :category "Einkaufen"}})
+
 (deftest test-transactions->category-freq
-  (is (=
-       (events/transactions->category-sum
-        {:uuid1 {:date "07.04.2020"
-                 :note "VISA EDEKA AKTIV-MARKT NR XXXX 7033 JENA KAUFUMSATZ 03.04 195518 ARN74627641095000141960901 Apple Pay"
-                 :expense 896
-                 :income 0
-                 :category "Einkaufen"}
-         :uuid2 {:date "07.04.2021"
-                 :note "VISA EDEKA AKTIV-MARKT NR XXXX 7033 JENA KAUFUMSATZ 03.04 195518 ARN74627641095000141960901 Apple Pay"
-                 :expense 698
-                 :income 0
-                 :category "Einkaufen"}
-         :uuid3 {:date "08.04.2021"
-                 :note "VISA EDEKA AKTIV-MARKT NR XXXX 7033 JENA KAUFUMSATZ 03.04 195518 ARN74627641095000141960901 Apple Pay"
-                 :expense 500
-                 :income 0
-                 :category "Einkaufen"}
-         :uuid4 {:date "08.04.2021"
-                 :note "Salesforce"
-                 :expense 0
-                 :income 230000
-                 :category nil}
-         :uuid5 {:date "07.12.2021"
-                 :note "Cafe Lenz"
-                 :expense 3324
-                 :income 0
-                 :category "Restaurants"}
-         :uuidd6 {:date "08.12.2021"
-                  :note "VISA EDEKA AKTIV-MARKT NR XXXX 7033 JENA KAUFUMSATZ 03.04 195518 ARN74627641095000141960901 Apple Pay"
-                  :expense 500
-                  :income 0
-                  :category "Einkaufen"}})
+  (is (= (events/transactions->category-sum base-transactions)
 
        category-sums)))
 
@@ -101,24 +101,43 @@
                     "UUID-YUP2" {:date [1 1 2022] :note "Cognitect b" :uuid "UUID-YUP2"}}
       initial-db {:transactions transactions
                   :uncategorized-transactions (list "UUID-YUP" "UUID-NOPE" "UUID-YUP2")
-                  :filter-term nil}]
-  
+                  :filter-term nil
+                  :single-assignment false}]
+
   (deftest test-filter-table
     (is (= (events/filter-table initial-db [:events/filter-table "Cognitect"])
            {:transactions transactions
             :uncategorized-transactions (list "UUID-YUP" "UUID-YUP2")
-            :filter-term "Cognitect"})))
+            :filter-term "Cognitect"
+            :single-assignment false})))
 
   (deftest test-filter-table-blank
     (is (= (events/filter-table initial-db [:events/filter-table nil])
            {:transactions transactions
             :uncategorized-transactions (list "UUID-YUP" "UUID-NOPE" "UUID-YUP2")
-            :filter-term nil})))
-  
+            :filter-term nil
+            :single-assignment true})))
+
   (deftest test-clear-filter
     ;; Checks whether clear-filter event returns the db to (almost) its initial state. 
     (is (=
          (events/clear-filter initial-db [::events/clear-filter])
-         initial-db)))
-  )
+         (assoc initial-db :single-assignment true)))))
 
+
+(let [initial-db {:transactions base-transactions :uncategorized-transactions (list :uuid4) :category-value "shopping"}]
+  (deftest test-add-single-category
+    (is (= (events/add-single-category initial-db :uuid4)
+           {:transactions (assoc-in base-transactions [:uuid4 :category] "shopping")
+            :uncategorized-transactions []
+            :category-value "shopping"
+            :categorized-transactions [:uuid4]}))))
+
+(let [id-list (list :uuid1 :uuid2 :uuid3)
+      initial-db {:transactions base-transactions :uncategorized-transactions id-list :category-value "shopping" :categorized-transactions []}]
+  (deftest test-add-bulk-category
+    (is (= (events/add-bulk-category initial-db [])
+           {:transactions (reduce (fn [bt id] (assoc-in bt [id :category] "shopping")) base-transactions id-list)
+            :uncategorized-transactions []
+            :category-value "shopping"
+            :categorized-transactions id-list}))))

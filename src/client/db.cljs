@@ -7,4 +7,6 @@
   
   {:transactions {}
    :selected-transactions []
-   :single-assignment false})
+   :single-assignment true
+   :main-view :uncategorized
+   :categorized-transactions []})

@@ -7,7 +7,8 @@
             [client.csv :refer [csvstr->map fidor->transaction ing->transaction]]
             [cljs-time.core :refer [local-date after?]]))
 
-(rf/reg-event-db ::initialize (fn [_ _] init-db))
+(defn initialize [_ _] init-db)
+(rf/reg-event-db ::initialize initialize)
 
 (defn add-single-category
   [db id]
@@ -21,14 +22,11 @@
 
 (rf/reg-event-db ::assign-bulk-category add-bulk-category)
 
-(rf/reg-event-db ::assign-single-category (fn [db [_]] (add-single-category db (first (:uncategorized-transactions db)))))
+(defn assign-single-category [db [_]] (add-single-category db (first (:uncategorized-transactions db))))
+(rf/reg-event-db ::assign-single-category assign-single-category)
 
-
-(rf/reg-event-db
-
- ::category-value
-
- (fn [db [_ text]] (assoc db :category-value text)))
+(defn category-value [db [_ text]] (assoc db :category-value text))
+(rf/reg-event-db ::category-value category-value)
 
 
 (defn transaction->local-date
@@ -89,12 +87,8 @@
        (map #(into [] %))
        (reduce (fn [csv items] (str csv (join ";" (map second items)) "\n")) (str (join ";" headers) "\n"))))
 
-
-(rf/reg-event-fx
-
- ::export-csv
-
- (fn [{:keys [db]} _] {::fx/export-csv (map->csv (:transactions db) ["Date" "Note" "Expense" "Income" "Category"])}))
+(defn export-csv [{:keys [db]} _] {::fx/export-csv (map->csv (:transactions db) ["Date" "Note" "Expense" "Income" "Category"])})
+(rf/reg-event-fx ::export-csv export-csv)
 
 (def month-map
   {"01" "January"
@@ -137,13 +131,10 @@
                 (reduce (sum-by-cat->csv categories) [])
                 (into ["Year;Month;" (join ";" categories) "\n"])))))
 
-(rf/reg-event-fx
-
- ::export-category-csv
-
- (fn [{:keys [db]} _] {::fx/export-category-csv (-> (:transactions db)
-                                                    transactions->category-sum
-                                                    category-sum->csv)}))
+(defn export-category-csv [{:keys [db]} _] {::fx/export-category-csv (-> (:transactions db)
+                                                   transactions->category-sum
+                                                   category-sum->csv)})
+(rf/reg-event-fx ::export-category-csv export-category-csv)
 
 (defn init-fields [t] (assoc t :selected false :category nil))
 (defn add-uuid [t] (assoc t :uuid (random-uuid)))
